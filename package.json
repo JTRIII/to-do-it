@@ -8,5 +8,10 @@
     "test": "node npm-scripts/test.mjs"
   },
   "author": "James Roberts",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "csslint": "^1.0.5",
+    "eslint": "^9.15.0",
+    "htmlhint": "^1.1.4"
+  }
 }
