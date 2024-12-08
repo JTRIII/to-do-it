@@ -12,6 +12,8 @@ function logArguments(name, args) {
         console.dir(args);
     }
 }
+
+
 function logResult(name, data) {
     if (LOGGING.result && data) {
         console.log(`Service.${name} API Result`);
@@ -22,26 +24,28 @@ function logResult(name, data) {
 
 export async function login(username) {
     logArguments("login", arguments)
-    const data = await api.post("/login", {
+    const data = await api.post("/api/login", {
         username,
     });
-    logResult("login", data);
-    return data;
+    const userData = data.data;
+    logResult("login", userData);
+    return userData;
     
 }
 
 
 export async function getTodos(userId) {
     logArguments("getTodos", arguments);
-    const data = await api.get(`/users/${userId}/todos`);
+    const data = await api.get(`/api/users/${userId}/todos`);
     logResult("getTodos", data);
     return data;
 }
 
 
+
 export async function addTodo(userId, todo) {
     logArguments("addTodo", arguments);
-    const data = await api.post(`/users/${userId}/todos`, todo);
+    const data = await api.post(`/api/users/${userId}/todos`, todo);
     logResult("addTodo", data);
     return data;
 }
@@ -49,7 +53,7 @@ export async function addTodo(userId, todo) {
 
 export async function editTodo(userId, todoId, updates) {
     logArguments("editTodo", arguments);
-    const data = await api.put(`/users/${userId}/todos/${todoId}`, updates);
+    const data = await api.put(`/api/users/${userId}/todos/${todoId}`, updates);
     logResult("editTodo", data);
     return data;
 }
@@ -57,7 +61,7 @@ export async function editTodo(userId, todoId, updates) {
 
 export async function deleteTodo(userId, todoId) {
     logArguments("deleteTodo", arguments);
-    const data = await api.delete(`/users/${userId}/todos/${todoId}`);
+    const data = await api.delete(`/api/users/${userId}/todos/${todoId}`);
     logResult("deleteTodo", data);
     return data;
 }

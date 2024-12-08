@@ -1,157 +1,169 @@
 
+import todoService from "./services/todoService.mjs";
+
 console.log("Starting application...");
 
-let contentEl = document.querySelector(".page-content");
+let appState = new Map();
 
-let html = contentEl.innerHTML;
 
-html+= `
-<h1 style="color: green;">Server Started</h1>
+function onEnter(action) {
+    const ev = window.event;
+    if (ev.keyCode === 13 && !ev.shiftKey) {
+        ev.preventDefault();
+        action();
+    }
+}
+window.onEnter = onEnter;
+
+async function displayLogin() {
+    let contentEl = document.querySelector(".page-content");
+    let html = "";
+    html+=`
+<div class="login-view">
+    <h1 class="content-heading">Login</h1>
+    <hr/>
+    <label class="field-labels"><br>
+        <input id="username-input" type="text" onkeypress="onEnter(login)"></br>
+        <button type="button" onclick="login()"/>Login</button>
+    </label>
+</div>
 `.trimStart();
+    contentEl.innerHTML = html;
+    let usernameInputEl = document.querySelector("#username-input");
+    usernameInputEl.focus();
+}
+window.displayLogin = displayLogin;
 
-contentEl.innerHTML = html;
 
-setTimeout(async () => {
+async function login() {
+    let usernameInputEl = document.querySelector("#username-input");
+    let username = usernameInputEl.value;
+    const user = await todoService.login(username);
+    appState.set("user", user);
+    displayTodos();
+}
+window.login = login;
+
+
+
+async function displayTodos() {
+    const user = appState.get("user");
+    const todos = await todoService.getTodos(user.id);
+    
+    let todoData = todos.data || {};
+    
+    // Only create default todos if this is the first load (no todos exist yet)
+    if (Object.keys(todoData).length === 0 && !appState.get("hasLoadedBefore")) {
+        // Create two default todos
+        const todo1 = await todoService.addTodo(user.id, {
+            text: 'undefined',
+            completed: false
+        });
+        
+        const todo2 = await todoService.addTodo(user.id, {
+            text: 'undefined',
+            completed: false
+        });
+        
+        // Get fresh todo list after creating defaults
+        const updatedTodos = await todoService.getTodos(user.id);
+        todoData = updatedTodos.data || {};
+        
+        // Mark that we've loaded before
+        appState.set("hasLoadedBefore", true);
+    }
+    
+    appState.set("todos", todoData);
+    
+    let contentEl = document.querySelector(".page-content");
+    let html = "";
+    html+=`
+    <div class="todo-view">
+    <button type="button" class="todo-opt-btn logout-btn" onclick="displayLogin()"/>Logout</button>
+    <h1 class="content-heading">To Do Items:</h1>
+    <hr/>
+    `.trimStart();
     
     
-    // let fetchResult = await fetch("http://0.0.0.0:47900/api");
-    let fetchResult = await fetch("http://localhost:47900/api/");
-    let result = await fetchResult.json();
-    console.dir(JSON.stringify(result, null, 4));
-    
-    let html = contentEl.innerHTML;
+    let todoEntries = Object.entries(todoData);
+    if (todoEntries.length === 0) {
+        html+= `<span class="todo-label">No To Do Items Found</span>`;
+    } else {
+        todoEntries.forEach(([todoId, todo]) => {
+            html+= `
+            <div class="todo" data-todo-id="${todoId}">
+            <button type="button" class="todo-opt-btn del" onclick="deleteTodo()"/>X</button>
+            <input class="todo-checkbox" type="checkbox" onchange="editTodo()" ${todo.completed ? "checked" : ""}/>
+            <span class="todo-text" contenteditable onkeypress="onEnter(editTodo)" onblur="editTodo()">${todo.text}</span>
+            </div>
+            `.trimStart();
+        });
+    }
+
     html+= `
-    <h1 style="color: red;">${result.data.message}</h1>
+    <hr/>
+    <label class="todo-label">Add a To Do:</br>
+    <textarea id="add-todo-textarea" onkeypress="onEnter(addTodo)"></textarea>
+    </label>
+    <button type="button" class="todo-opt-btn" onclick="addTodo()"/>Add a To Do</button>
     `.trimStart();
     contentEl.innerHTML = html;
+    document.querySelector("#add-todo-textarea").focus();
+}
+window.displayTodos = displayTodos;
 
 
-    // fetchResult = await fetch("http://0.0.0.0:47900/api/login", {
-    fetchResult = await fetch("http://localhost:47900/api/login", {
-        method: "POST",
-        body: JSON.stringify({
-            username: "james",
-        }, null, 4),
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Accept": "application/json",
-        },
+
+async function addTodo() {
+    let user = appState.get("user");
+    let todoText = document.querySelector("#add-todo-textarea").value;
+    await todoService.addTodo(user.id, {
+        text: todoText,
+        completed: false,
     });
-    result = await fetchResult.json();
-    let user = result.data;
-    console.dir(JSON.stringify(result, null, 4));
+    displayTodos();
+}
+window.addTodo = addTodo;
 
 
-    // add
-    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
-    fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
-        method: "POST",
-        body: JSON.stringify({
-            text: "Feed the cat.",
-            completed: false,
-        }, null, 4),
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Accept": "application/json",
-        },
-    });
-    result = await fetchResult.json();
-    let todo = result.data;
-    let todo1 = todo;
-    console.dir(JSON.stringify(result, null, 4));
+async function editTodo() {
+    let user = appState.get("user");
+    const ev = window.event;
+    const targetEl = ev.target;
+    const parentEl = targetEl.parentElement;
+    const todoId = parentEl.getAttribute("data-todo-id");
+    const currentTodo = appState.get("todos")[todoId];
+    const todoTextEl = document.querySelector(`div[data-todo-id="${todoId}"] .todo-text`);
+    const todoText = todoTextEl.innerText;
+    if (!todoText.trim()) {
+        todoTextEl.innerText = currentTodo.text;
+        return;
+    }
+    const todoComplete = document.querySelector(`div[data-todo-id="${todoId}"] .todo-checkbox`).checked;
+    const newTodo = {
+        id: todoId,
+        text: todoText,
+        completed: todoComplete,
+    };
+    if (newTodo.text !== currentTodo.text || newTodo.completed !== currentTodo.completed) {
+        await todoService.editTodo(user.id, todoId, newTodo);
+        displayTodos();
+    }
+}
+window.editTodo = editTodo;
 
 
-    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
-    fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
-        method: "POST",
-        body: JSON.stringify({
-            text: "Feed the dog.",
-            completed: true,
-        }, null, 4),
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Accept": "application/json",
-        },
-    });
-    result = await fetchResult.json();
-    todo = result.data;
-    console.dir(JSON.stringify(result, null, 4));
-
-
-    // Get all todos
-    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
-    fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Accept": "application/json",
-        },
-    });
-    result = await fetchResult.json();
-    let todos = result.data;
-    console.dir(JSON.stringify(result, null, 4));
-
-
-    // Update
-    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos/{todo1.id}`, {
-    fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos/${todo1.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-            text: "Feed the bird.",
-            completed: true,
-        }, null, 4),
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Accept": "application/json",
-        },
-    });
-    result = await fetchResult.json();
-    todo = result.data;
-    console.dir(JSON.stringify(result, null, 4));
-
-
-    // Get all todos
-    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
-        fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json; charset=utf-8",
-                "Accept": "application/json",
-            },
-        });
-        result = await fetchResult.json();
-        todos = result.data;
-        console.dir(JSON.stringify(result, null, 4));
-
-
-    // delete
-    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos/{todo1.id}`, {
-        fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos/${todo1.id}`, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json; charset=utf-8",
-                "Accept": "application/json",
-            },
-        });
-        result = await fetchResult.json();
-        todo = result.data;
-        console.dir(JSON.stringify(result, null, 4));
-
-
-        // Get all todos
-        // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
-        fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json; charset=utf-8",
-                "Accept": "application/json",
-            },
-        });
-        result = await fetchResult.json();
-        todos = result.data;
-        console.dir(JSON.stringify(result, null, 4));
+async function deleteTodo() {
+    let user = appState.get("user");
+    const ev = window.event;
+    const targetEl = ev.target;
+    const parentEl = targetEl.parentElement;
+    const todoId = parentEl.getAttribute("data-todo-id");
+    await todoService.deleteTodo(user.id, todoId);
+    displayTodos();
+}
+window.deleteTodo = deleteTodo;
 
 
 
-}, 1000);
-
+displayLogin();
