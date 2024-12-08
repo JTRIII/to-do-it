@@ -51,8 +51,39 @@ export async function addTodo(userId, todo) {
     return Promise.resolve(todo);
 }
 
+export async function editTodo(userId, todoId, todo) {
+    const user = usersByUserId.get(userId);
+    if (!user) return Promise.reject(new Error("editTodo - User does not exist."));
+    try {
+        todo = validateTodo(todo);
+    }
+    catch (err) {
+        return Promise.reject(err);
+    }
+    let todos = todosByUserId.get(userId);
+    if (!todos) return Promise.reject(new Error("editTodo - User has no todos."));
+    todo.id = todoId;
+    let currentTodo = todos.get(todoId);
+    if (!currentTodo) return Promise.reject(new Error(`editTodo - User has no todo with id ${todoId}.`));
+    todos.set(todoId, todo);
+    return Promise.resolve(todo);
+}
+
+export async function deleteTodo(userId, todoId) {
+    const user = usersByUserId.get(userId);
+    if (!user) return Promise.reject(new Error("editTodo - User does not exist."));
+    let todos = todosByUserId.get(userId);
+    if (!todos) return Promise.reject(new Error("editTodo - User has no todos."));
+    let currentTodo = todos.get(todoId);
+    if (!currentTodo) return Promise.reject(new Error(`editTodo - User has no todo with id ${todoId}.`));
+    todos.delete(todoId);
+    return Promise.resolve(currentTodo);
+}
+
 export default {
     login,
     getTodos,
     addTodo,
+    editTodo,
+    deleteTodo,
 };

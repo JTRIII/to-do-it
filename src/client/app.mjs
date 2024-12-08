@@ -57,7 +57,9 @@ setTimeout(async () => {
     });
     result = await fetchResult.json();
     let todo = result.data;
+    let todo1 = todo;
     console.dir(JSON.stringify(result, null, 4));
+
 
     // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
     fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
@@ -76,6 +78,7 @@ setTimeout(async () => {
     console.dir(JSON.stringify(result, null, 4));
 
 
+    // Get all todos
     // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
     fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
         method: "GET",
@@ -87,6 +90,66 @@ setTimeout(async () => {
     result = await fetchResult.json();
     let todos = result.data;
     console.dir(JSON.stringify(result, null, 4));
+
+
+    // Update
+    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos/{todo1.id}`, {
+    fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos/${todo1.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+            text: "Feed the bird.",
+            completed: true,
+        }, null, 4),
+        headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Accept": "application/json",
+        },
+    });
+    result = await fetchResult.json();
+    todo = result.data;
+    console.dir(JSON.stringify(result, null, 4));
+
+
+    // Get all todos
+    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
+        fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Accept": "application/json",
+            },
+        });
+        result = await fetchResult.json();
+        todos = result.data;
+        console.dir(JSON.stringify(result, null, 4));
+
+
+    // delete
+    // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos/{todo1.id}`, {
+        fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos/${todo1.id}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Accept": "application/json",
+            },
+        });
+        result = await fetchResult.json();
+        todo = result.data;
+        console.dir(JSON.stringify(result, null, 4));
+
+
+        // Get all todos
+        // fetchResult = await fetch(`http://0.0.0.0:47900/api/users/${user.id}/todos`, {
+        fetchResult = await fetch(`http://localhost:47900/api/users/${user.id}/todos`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Accept": "application/json",
+            },
+        });
+        result = await fetchResult.json();
+        todos = result.data;
+        console.dir(JSON.stringify(result, null, 4));
 
 
 

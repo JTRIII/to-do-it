@@ -71,7 +71,7 @@ export function setup (app) {
             user = await dataStore.login(data.username);
         }
         catch (err) {
-            res.status(500).end(err.message);
+            res.status(500).end({ message: err.message });
             return;
         }
         res.json({
@@ -91,7 +91,7 @@ export function setup (app) {
             todos = await dataStore.getTodos(userId);
         }
         catch (err) {
-            return res.status(500).end(err.message);
+            return res.status(500).end({ message: err.message });
         }
         res.json({
             api: Object.assign({
@@ -110,12 +110,53 @@ export function setup (app) {
             todo = await dataStore.addTodo(userId, data);
         }
         catch (err) {
-            return res.status(500).end(err.message);
+            return res.status(500).end({ message: err.message });
         }
         res.json({
             api: Object.assign({
                 verb: "POST",
                 route: "/api/users/:userId/todos",
+            }, API_BASE),
+            data: todo,
+        });
+    });
+
+    app.put("/api/users/:userId/todos/:todoId", async (req, res) => {
+        const userId = req.params.userId;
+        const todoId = req.params.todoId;
+        const data = req.body;
+        let todo;
+        try {
+            todo = await dataStore.editTodo(userId, todoId, data);
+        }
+        catch (err) {
+            res.status(500).end({ message: err.message });
+            return;
+        }
+        res.json({
+            api: Object.assign({
+                verb: "PUT",
+                route: "/api/users/:userId/todos/:todoId",
+            }, API_BASE),
+            data: todo,
+        });
+    });
+
+    app.delete("/api/users/:userId/todos/:todoId", async (req, res) => {
+        const userId = req.params.userId;
+        const todoId = req.params.todoId;
+        let todo;
+        try {
+            todo = await dataStore.deleteTodo(userId, todoId);
+        }
+        catch (err) {
+            res.status(500).end({ message: err.message });
+            return;
+        }
+        res.json({
+            api: Object.assign({
+                verb: "DELETE",
+                route: "/api/users/:userId/todos/:todoId",
             }, API_BASE),
             data: todo,
         });
