@@ -3,6 +3,8 @@ import { fileURLToPath } from "url";
 
 import express from "express";
 
+import api from "./api/api.mjs";
+
 
 const PORT = 47900;
 
@@ -29,6 +31,9 @@ export function run () {
 
     // Statically serve client files
     app.use("/client", express.static(STATIC_FILES_PATH));
+
+    // Apply API routes
+    api.setup(app);
 
     app.listen(PORT, () => {
         console.log(`Application is listening on http://0.0.0.0:${PORT}`);
